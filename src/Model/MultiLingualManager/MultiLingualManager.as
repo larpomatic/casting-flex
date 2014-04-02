@@ -355,7 +355,7 @@ public class MultiLingualManager {
         try {
             _language = 1;
 
-            var myRequest:URLRequest = new URLRequest("language.csv");
+            var myRequest:URLRequest = new URLRequest("https://raw.githubusercontent.com/larpomatic/casting-flex/master/i18n/language.csv");
 
             _textLoader.load(myRequest);
         }
@@ -371,7 +371,7 @@ public class MultiLingualManager {
         try {
             _language = 2;
 
-            var myRequest:URLRequest = new URLRequest("language.csv");
+            var myRequest:URLRequest = new URLRequest("https://raw.githubusercontent.com/larpomatic/casting-flex/master/i18n/language.csv");
 
             _textLoader.load(myRequest);
         }
