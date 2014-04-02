@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application
+        xmlns:mx="http://www.adobe.com/2006/mxml"
+        width="100%" height="100%"
+        xmlns:Views="Views.*">
+    <mx:Script>
+		<![CDATA[
+        import Model.ViewManager.ViewManager;
+        ]]>
+	</mx:Script>
+
+    <mx:ViewStack id="vs" enabled="true"
+                  selectedIndex="{ViewManager.getInstance().currentView}"
+                  width="100%"
+                  height="100%">
+        <Views:ImportView id="vs0" width="100%" height="100%"/>
+        <Views:ComputeCastingView id="vs1" width="100%" height="100%"/>
+    </mx:ViewStack>
+
+</mx:Application>

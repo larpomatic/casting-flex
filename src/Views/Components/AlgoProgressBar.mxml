@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" 
+				title="Ecran de traitement du casting v4"
+				creationComplete="runProgressBar(event)">
+	<mx:Script>
+		<![CDATA[
+			import Model.AlgoManager.AlgoManager;
+			import Model.CastingManager.CastingManager;
+			
+			import flash.sampler.getInvocationCount;
+			import flash.utils.setTimeout;
+			
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			public var _choosenAlgo:String;
+			
+			protected function runProgressBar(event:FlexEvent):void
+			{
+				if (_choosenAlgo.length == 0)
+				{
+					closePopUp(null);
+					return;
+				}
+				if (_choosenAlgo == "Best Mean")
+				{
+					AlgoManager.getInstance().addEventListener(Event.COMPLETE, closePopUp);
+					setTimeout(AlgoManager.getInstance().bestMeanAlgo,1000, 1);
+					return;
+				}
+				if (_choosenAlgo == "Maximum")
+				{	
+					AlgoManager.getInstance().addEventListener(Event.COMPLETE, closePopUp);
+					setTimeout(AlgoManager.getInstance().maximumAlgo,1000, 1);
+					return;
+				}
+				if (_choosenAlgo == "First Fit")
+				{
+					AlgoManager.getInstance().addEventListener(Event.COMPLETE, closePopUp);
+					setTimeout(AlgoManager.getInstance().firstFitAlgo,1000, 1);
+					return;
+				}
+			}
+			
+			protected function closePopUp(e:*=null):void
+			{
+				// Fermeture de la fenêtre
+				dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+				PopUpManager.removePopUp(this);
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<mx:ProgressBar id="progressBar" source="{AlgoManager.getInstance()}" mode="event"/>
+	
+</mx:TitleWindow>

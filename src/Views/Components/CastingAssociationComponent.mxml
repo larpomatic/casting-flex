@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" 
+				title="Ecran d'affichage des résultats d'une application">
+	
+	<mx:Script>
+		<![CDATA[
+			import Model.CastingManager.CastingAssociation;
+			import Model.CastingManager.CastingAssociationForbidden;
+			import Model.CastingManager.CastingAssociationManager;
+			import Model.CastingManager.CastingAssociationMendatory;
+			
+			import mx.events.CloseEvent;
+			import mx.events.ToolTipEvent;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			public var _castingAssociation:CastingAssociation;
+			
+			protected function onClickCloseButton(event:MouseEvent):void
+			{
+				// Fermeture de la fenêtre
+				dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+				PopUpManager.removePopUp(this);
+			}
+			
+			protected function CancelAssociation_clickHandler(event:MouseEvent):void
+			{
+				CastingAssociationForbidden.getInstance().createNewForbiddenAssociation(_castingAssociation._playerCharacter, _castingAssociation._humanPlayer);
+				
+				// Fermeture de la fenêtre
+				dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+				PopUpManager.removePopUp(this);
+			}
+			
+			protected function valideAssociation_clickHandler(event:MouseEvent):void
+			{
+				CastingAssociationMendatory.getInstance().createNewMendatoryAssociation(_castingAssociation._playerCharacter, _castingAssociation._humanPlayer);
+				
+				// Fermeture de la fenêtre
+				dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+				PopUpManager.removePopUp(this);
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<mx:NumberFormatter id="scoreFormatter" precision="2"/>
+	
+	<mx:VBox>
+		<mx:Form id="editForm" width="352" height="325">
+			
+			<mx:FormItem label="Personnage" width="100%" fontWeight="bold">
+				<mx:Text text="{_castingAssociation._playerCharacter.idName}"
+						 width="100%"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Joueur" width="100%" fontWeight="bold">
+				<mx:Text text="{_castingAssociation._humanPlayer.idName}"
+						 width="100%"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Score d'interprétation" width="100%" fontWeight="bold">
+				<mx:Text text="{scoreFormatter.format(_castingAssociation._performanceScore)}"
+						 toolTip="Capacité du joueur à interpréter le personnage (moyenne du score de compétence et du score de respect des choix du joueur)"
+						 width="100%"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Score de compétence" width="100%" fontWeight="bold">
+				<mx:Text text="{scoreFormatter.format(_castingAssociation._skillPerformanceScore)}"
+						 toolTip="Capacité du joueur à correspondre avec les compétences du personnage"
+						 width="100%"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Score de respect des choix du joueur" width="100%" fontWeight="bold">
+				<mx:Text text="{scoreFormatter.format(_castingAssociation._playerChoiceCompatibilityScore)}"
+						 toolTip="Capacité du personnage à correspondre avec les choix du joueur (moyenne des scores de [joue avec], [joue sans], [session avec], [session sans])"
+						 width="100%"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Score de respect des [joue avec]" width="100%" fontWeight="bold">
+				<mx:Text text="{scoreFormatter.format(_castingAssociation._playWithCompatibilityScore)}"
+						 toolTip="Capacité du personnage à correspondre avec les désir de [joue avec] du joueur (çàd les joueurs avec qui le joueur veut jouer)"
+						 width="100%"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Score de respect des [joue sans]" width="100%" fontWeight="bold">
+				<mx:Text text="{scoreFormatter.format(_castingAssociation._playWithoutCompatibilityScore)}"
+						 toolTip="Capacité du personnage à correspondre avec les désir de [joue sans] du joueur (çàd les joueurs avec qui le joueur ne veut pas jouer)"
+						 width="100%"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Score de respect des [session avec]" width="100%" fontWeight="bold">
+				<mx:Text text="{scoreFormatter.format(_castingAssociation._sessionWithCompatibilityScore)}"
+						 toolTip="Capacité du personnage à correspondre avec les désir de [session avec] du joueur (çàd les joueurs avec qui le joueur veut être sur la même session)"
+						 width="100%"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Score de respect des [session sans]" width="100%" fontWeight="bold">
+				<mx:Text text="{scoreFormatter.format(_castingAssociation._sessionWithoutCompatibilityScore)}"
+						 toolTip="Capacité du personnage à correspondre avec les désir de [session sans] du joueur (çàd les joueurs avec qui le joueur ne veut pas être sur la même session)"
+						 width="100%"/>
+			</mx:FormItem>
+			
+			<mx:HBox horizontalAlign="center"
+					 width="100%">
+				<mx:Button id="valideAssociation" label="Valider association"
+						   click="valideAssociation_clickHandler(event)"/>
+				<mx:Button id="CancelAssociation" label="Refuser association"
+						   click="CancelAssociation_clickHandler(event)"/>
+			</mx:HBox>
+			
+			<mx:HBox horizontalAlign="center" width="100%">
+				<mx:Button id="buttonClose"
+						   label="Fermer"
+						   click="onClickCloseButton(event)"/>
+			</mx:HBox>
+			
+		</mx:Form>
+	</mx:VBox>
+	
+</mx:TitleWindow>

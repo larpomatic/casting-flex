@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml"
+				title="{MultiLingualManager.getInstance().screenRoleLabel}">
+	
+	<mx:Script>
+		<![CDATA[
+			import DataObjects.PlayerCharacter;
+			import DataObjects.Skill;
+			
+			import Model.CastingManager.CastingManager;
+			import Model.DataManager.DataManager;
+			import Model.MultiLingualManager.MultiLingualManager;
+			import Model.ToolBox.CastingAlgoTools;
+			
+			import mx.core.IFlexDisplayObject;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			
+			// Correspond au personnage sélectionné
+			[Bindable]
+			public var _playerCharacter:PlayerCharacter;
+			// Permet de faire une sauvegarde de l'état du personnage à la création de la fenêtre
+			// çàd avant modification de celui-ci
+			public var _savedPlayerCharacter:PlayerCharacter;
+			
+			protected function selectSexeM(event:MouseEvent):void
+			{
+				_playerCharacter.sex = "M";
+			}
+			
+			
+			protected function selectSexeF(event:MouseEvent):void
+			{
+				_playerCharacter.sex = "F";
+			}
+			
+			
+			protected function selectSexeN(event:MouseEvent):void
+			{
+				_playerCharacter.sex = "N";
+			}
+
+			protected function onCHangePCFirstName(event:Event):void
+			{
+				_playerCharacter.firstName = firstNameInput.text;
+				
+			}
+
+
+			protected function onChangePCLastName(event:Event):void
+			{
+				_playerCharacter.lastName = lastNameInput.text;
+				_playerCharacter.idName = _playerCharacter.firstName + " " + _playerCharacter.lastName;
+			}
+			
+			protected function onClickValidButton(event:MouseEvent):void
+			{
+				// Potentiel nouveau personnage
+				if (_playerCharacter.onCreateEntity == true)
+				{
+					_playerCharacter.onCreateEntity = false;
+					DataManager.getInstance().playerCharacterArray.addItem(_playerCharacter);
+				}
+				
+				// Fermeture de la fenêtre
+				dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+				PopUpManager.removePopUp(this);
+			}
+			
+			protected function onClickCancelButton(event:MouseEvent):void
+			{
+				// Remise à zéro du joueur
+				CastingAlgoTools.copyPlayerCharacter(_savedPlayerCharacter, _playerCharacter);
+				// Fermeture de la fenêtre
+				dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+				PopUpManager.removePopUp(this);
+			}
+			
+			protected function addCompetenciesButton_clickHandler(event:MouseEvent):void
+			{
+				if ((nameNewCompetency.text != null)
+					&& (nameNewCompetency.text.replace(" ", "") != ""))
+				{
+					var skill:Skill = new Skill();
+					skill.name = nameNewCompetency.text;
+					skill.capacity = 1;
+					skill.ponderation = 1;
+					
+					DataManager.getInstance().addSkillToCasting(skill);
+					
+					if (_playerCharacter.onCreateEntity == true)
+					{
+						_playerCharacter.skillArray.addItem(skill);
+					}
+				}
+			}
+			
+			protected function removeCompetenciesButton_clickHandler(event:MouseEvent):void
+			{
+				if (competenciesList.selectedIndex != -1)
+				{
+					DataManager.getInstance().removeSkillToCasting(competenciesList.selectedItem as Skill);
+					
+					if (_playerCharacter.onCreateEntity == true)
+					{
+						_playerCharacter.skillArray.removeItemAt(competenciesList.selectedIndex);
+					}
+				}
+			}
+
+			protected function facultatifCheckBox_clickHandler(event:MouseEvent):void
+			{
+				if (facultatifCheckBox.selected)
+				{
+					_playerCharacter.isFacultatif = true; 
+				}
+				else
+				{
+					_playerCharacter.isFacultatif = false;
+				}
+			}
+			
+			private function refreshComboBox():void
+			{
+				// Mise a jour ComboBox Ami
+				playerCharacterPlayWithAssociation.dataProvider = CastingManager.getInstance().getPotentialCharactersToPlayWithOrWithout(_playerCharacter);
+				// Mise a jour ComboBox Ennemi
+				playerCharacterPlayWithoutAssociation.dataProvider = CastingManager.getInstance().getPotentialCharactersToPlayWithOrWithout(_playerCharacter);
+			}
+			
+			protected function addPlayWithButton_clickHandler(event:MouseEvent):void
+			{
+				// Ajoute un nouvel ami
+				if (playerCharacterPlayWithAssociation.selectedItem != null)
+				{
+					_playerCharacter.playWithArray.addItem(playerCharacterPlayWithAssociation.selectedItem);
+					refreshComboBox()
+				}
+			}
+			
+			protected function removePlayWithButton_clickHandler(event:MouseEvent):void
+			{
+				// Supprime ami selectionné
+				if (playerCharacterPlayWithList.selectedIndex != -1)
+				{
+					_playerCharacter.playWithArray.removeItemAt(playerCharacterPlayWithList.selectedIndex);
+					refreshComboBox()
+				}	
+			}
+			
+			protected function addPlayWithoutButton_clickHandler(event:MouseEvent):void
+			{
+				if (playerCharacterPlayWithoutAssociation.selectedItem != null)
+				{
+					_playerCharacter.playWithoutArray.addItem(playerCharacterPlayWithoutAssociation.selectedItem);
+					refreshComboBox()
+				}
+			}
+			
+			protected function removePlayWithoutButton_clickHandler(event:MouseEvent):void
+			{
+				if (playerCharacterPlayWithoutList.selectedIndex != -1)
+				{
+					_playerCharacter.playWithoutArray.removeItemAt(playerCharacterPlayWithoutList.selectedIndex);
+					refreshComboBox()
+				}	
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<mx:VBox>
+		<mx:TabNavigator width="488">
+			<mx:Form id="editForm" width="100%" label="{MultiLingualManager.getInstance().caracteristicsManagerOnglet}">
+				
+				<mx:FormItem label="{MultiLingualManager.getInstance().firstNameLabel}" width="100%">
+					<mx:TextInput id="firstNameInput"
+								  text="{_playerCharacter.firstName}"
+								  change="onCHangePCFirstName(event)"
+								  width="100%"/>
+				</mx:FormItem>
+				
+				<mx:FormItem label="{MultiLingualManager.getInstance().lastNameLabel}">
+					<mx:TextInput id="lastNameInput"
+								  text="{_playerCharacter.lastName}"
+								  change="onChangePCLastName(event)"
+								  width="100%"/>
+					<mx:CheckBox id="facultatifCheckBox"
+								 label="{MultiLingualManager.getInstance().facultatifLabel}"
+								 click="facultatifCheckBox_clickHandler(event)"
+								 selected="{_playerCharacter.isFacultatif}"/>
+				</mx:FormItem>
+				
+				<mx:FormItem label="{MultiLingualManager.getInstance().sexLabel}" width="100%">
+					<mx:RadioButton groupName="sexType" 
+									id="sexeM"
+									label="{MultiLingualManager.getInstance().manLabel}"
+									selected="{_playerCharacter.sex == 'M'}"
+									click="selectSexeM(event)"
+									width="100%"/>
+					<mx:RadioButton groupName="sexType" 
+									id="sexeF"
+									label="{MultiLingualManager.getInstance().womanLabel}"
+									selected="{_playerCharacter.sex == 'F'}"
+									click="selectSexeF(event)"
+									width="100%"/>
+					<mx:RadioButton groupName="sexType" 
+									id="sexeN"
+									label="{MultiLingualManager.getInstance().neutreLabel}"
+									selected="{_playerCharacter.sex == 'N'}"
+									click="selectSexeN(event)"
+									width="100%"/>
+				</mx:FormItem>
+				
+				<mx:FormItem label="{MultiLingualManager.getInstance().competenciesLabel}" width="100%">
+					<mx:List id="competenciesList" itemRenderer="Views.Renderers.EditableSkillRenderer"
+							 dataProvider="{_playerCharacter.skillArray}"
+							 width="100%"/>
+					<mx:HBox id="castingManagerCompetenciesButtons">
+						<mx:TextInput id="nameNewCompetency"/>
+						<mx:Button id="addCompetenciesButton"
+								   label="{MultiLingualManager.getInstance().addLabel}"
+								   click="addCompetenciesButton_clickHandler(event)"/>
+						<mx:Button id="removeCompetenciesButton"
+								   label="{MultiLingualManager.getInstance().removeLabel}"
+								   click="removeCompetenciesButton_clickHandler(event)"/>
+					</mx:HBox>
+				</mx:FormItem>
+				
+			</mx:Form>
+			
+			<mx:Form id="relationshipManager" width="100%" label="{MultiLingualManager.getInstance().relationshipManagerOnglet}">
+				
+				<mx:FormItem width="100%" label="{MultiLingualManager.getInstance().playWithLabel} :" horizontalAlign="left">
+					<mx:ComboBox id="playerCharacterPlayWithAssociation"
+								 dataProvider="{CastingManager.getInstance().getPotentialCharactersToPlayWithOrWithout(_playerCharacter)}"
+								 itemRenderer="Views.Renderers.EntityItemRenderer"
+								 prompt="{MultiLingualManager.getInstance().selectRoleLabel}"
+								 labelField="idName"
+								 width="100%"/>
+					<mx:HBox id="relationshipManagerPlayWithButtons">
+						<mx:Button id="addPlayWithButton"
+								   label="{MultiLingualManager.getInstance().addLabel}"
+								   click="addPlayWithButton_clickHandler(event)"/>
+						<mx:Button id="removePlayWithButton"
+								   label="{MultiLingualManager.getInstance().removeLabel}"
+								   click="removePlayWithButton_clickHandler(event)"/>
+					</mx:HBox>
+					<mx:List id="playerCharacterPlayWithList"
+							 dataProvider="{_playerCharacter.playWithArray}"
+							 itemRenderer="Views.Renderers.EntityItemRenderer"/>					
+				</mx:FormItem>
+
+				<mx:FormItem width="100%" label="{MultiLingualManager.getInstance().playWithoutLabel} :" horizontalAlign="left">
+					<mx:ComboBox id="playerCharacterPlayWithoutAssociation"
+								 dataProvider="{CastingManager.getInstance().getPotentialCharactersToPlayWithOrWithout(_playerCharacter)}"
+								 itemRenderer="Views.Renderers.EntityItemRenderer"
+								 prompt="{MultiLingualManager.getInstance().selectRoleLabel}"
+								 labelField="idName"
+								 width="100%"/>
+					<mx:HBox id="relationshipManagerPlayWithoutButtons">
+						<mx:Button id="addPlayWithoutButton"
+								   label="{MultiLingualManager.getInstance().addLabel}"
+								   click="addPlayWithoutButton_clickHandler(event)"/>
+						<mx:Button id="removePlayWithoutButton"
+								   label="{MultiLingualManager.getInstance().removeLabel}"
+								   click="removePlayWithoutButton_clickHandler(event)"/>
+					</mx:HBox>
+					<mx:List id="playerCharacterPlayWithoutList"
+							 dataProvider="{_playerCharacter.playWithoutArray}"
+							 itemRenderer="Views.Renderers.EntityItemRenderer"/>					
+				</mx:FormItem>
+			</mx:Form>
+		</mx:TabNavigator>
+		
+		<mx:HBox horizontalAlign="center"
+				 width="100%">
+			<mx:Button id="validationButton"
+					   label="{MultiLingualManager.getInstance().validLabel}"
+					   click="onClickValidButton(event)"/>
+			<mx:Button id="cancelButton"
+					   label="{MultiLingualManager.getInstance().cancelLabel}"
+					   click="onClickCancelButton(event)"/>
+		</mx:HBox>
+				
+	</mx:VBox>
+</mx:TitleWindow>

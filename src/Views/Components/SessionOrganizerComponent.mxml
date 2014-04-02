@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" 
+				title="Ecran de sélection des sessions v1.0">
+	
+	<mx:Script>
+		<![CDATA[
+			import Model.AlgoManager.AlgoParam;
+			import Model.ToolBox.CastingAlgoTools;
+			import Model.ViewManager.ViewManager;
+			
+			import Views.ComputeCastingView;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.IFlexDisplayObject;
+			import mx.events.CloseEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			public var _sessionNumberMax:int;
+			[Bindable]
+			public var _sessionNumber:int;
+			[Bindable]
+			public var _sessionNumberArray:ArrayCollection;
+			
+			protected function onClickValidButton(event:MouseEvent):void
+			{
+				// Création des personnages supplémentaire
+				CastingAlgoTools.buildPlayerCharacterArrayFromSessionNumber(_sessionNumber);
+				
+				// Changement de vue
+//				var locViewManager:ViewManager = ViewManager.getInstance();
+//				locViewManager.currentView = locViewManager.COMPUTE_CASTING_VIEW;	
+				
+				// Fermeture de la fenêtre
+				dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+				PopUpManager.removePopUp(this);
+			}
+			
+			protected function onClickCancelButton(event:MouseEvent):void
+			{
+				dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+				PopUpManager.removePopUp(this);
+			}
+			
+			protected function onChangeSessionComboBox(event:ListEvent):void
+			{
+				_sessionNumber = (sessionComboBox.selectedItem as int);
+				trace("Le nombre de session désiré est de : " + _sessionNumber);
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<mx:VBox horizontalAlign="center">
+		<mx:FormItem label="Nombre de sessions" width="100%">
+			<mx:ComboBox prompt="Sélectionnez le nombre de sessions désirées"
+						 id="sessionComboBox"
+						 width="100%"
+						 dataProvider="{_sessionNumberArray}"
+						 change="onChangeSessionComboBox(event)"/>
+		</mx:FormItem>	 
+		<mx:HBox horizontalAlign="center"
+				 width="100%">
+			<mx:Button id="validationButton"
+					   label="Valider"
+					   click="onClickValidButton(event)"/>
+			<mx:Button id="cancelButton"
+					   label="Annuler"
+					   click="onClickCancelButton(event)"/>
+		</mx:HBox>
+	</mx:VBox>
+</mx:TitleWindow>

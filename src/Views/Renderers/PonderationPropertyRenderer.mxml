@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml">
+	<mx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			
+			[Bindable]
+			public var promptIndex:int;
+
+			protected function onChange(event:ListEvent):void
+			{
+				data.capacity = sliderBar.value;
+				data.ponderation = sliderBar.value;
+			}
+
+		]]>
+	</mx:Script>
+	
+	<mx:Label text="{data.name}"/>
+	<mx:HSlider width="100%" maximum="10" minimum="1" snapInterval="1" id="sliderBar" value="1"/>
+</mx:HBox>	 
+

@@ -1,0 +1,507 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+           width="100%" height="100%">
+
+    <mx:Script>
+		<![CDATA[
+        import DataObjects.HumanPlayer;
+        import DataObjects.PlayerCharacter;
+        import DataObjects.Skill;
+
+        import Model.AlgoManager.AlgoManager;
+        import Model.AlgoManager.AlgoParam;
+        import Model.CastingManager.CastingAssociationManager;
+        import Model.CastingManager.CastingAssociationResult;
+        import Model.CastingManager.CastingManager;
+        import Model.CastingManager.CastingSession;
+        import Model.DataManager.DataManager;
+        import Model.ErrorManager.ErrorManager;
+        import Model.FileManager.FileManager;
+        import Model.MultiLingualManager.MultiLingualManager;
+        import Model.ToolBox.CastingAlgoTools;
+        import Model.ToolBox.ExportGenotron;
+
+        import Views.Components.AlgoProgressBar;
+        import Views.Components.HumanPlayerEditionComponent;
+        import Views.Components.PlayerCharacterEditionComponent;
+        import Views.Renderers.SessionRenderer;
+
+        import mx.core.IFlexDisplayObject;
+        import mx.events.CloseEvent;
+        import mx.events.ListEvent;
+        import mx.events.SliderEvent;
+        import mx.managers.PopUpManager;
+
+        /**Description
+         * * 2011-04-09 : PRC FédéGN / SIGL 2012
+         * Riyad YAKINE - package Views
+         * Le package Views contient l'ensemble des vues du
+         * casting. Chaque vue correspond à un écran de
+         * l'application.
+         * Dans les fichiers mxml du package view, on ne fait
+         * que construire le design de l'interface utilisateur,
+         * l'ensemble des traitements sont effectué dans les
+         * models. Ainsi, les views n'interagissent qu'avec les
+         * models. Les seuls traitements autorisé sont des
+         * traitements liés à l'interface (le clic sur un bouton
+         * par exemple)
+         *----------------------------------------------------
+         * 2011-04-09 : PRC FédéGN / SIGL 2012
+         * Riyad YAKINE - ComputeCastingView.mxml
+         * Vue permettant de lancer le casting en choissisant
+         * l'algo de répartition et le paramètrage de celui-ci.
+         * Le resultat de la répartition est directement visible
+         * dans cette écran et entièrement modifiable à la main.
+         * Ainsi, il est possible d'accéder au détail de chaque
+         * joueur ou personnage et de modifier n'importe lequel
+         * des attributs. De plus il est possible d'exporter le
+         * résultats et l'ensemble des données du casting.
+         *****************************************************/
+
+        // Notre gestionnaire de fichier avec lequel les différents boutons vont intéragir
+        private var fileManager:FileManager = new FileManager();
+
+        public var _sessionNumber:int;
+
+        private function buildAccordion(e:* = null):void {
+            accordion.removeAllChildren();
+            var locNbSession:int = CastingManager.getInstance().sessionArray.length;
+
+            for (var i:int = 0; i < locNbSession; i++) {
+                var currentSession:SessionRenderer = new SessionRenderer();
+
+                currentSession.dataProvider = (CastingManager.getInstance().sessionArray.getItemAt(i) as CastingSession)._sessionCastingAssociationArray;
+
+                var vbox:VBox = new VBox();
+                vbox.percentHeight = 100;
+                vbox.percentWidth = 100;
+                vbox.label = "Session " + (i + 1).toString();
+
+                vbox.addChild(currentSession);
+                accordion.addChild(vbox);
+            }
+        }
+
+
+        protected function editPlayerCharacter(event:MouseEvent):void {
+            var locPCEditionComponent:PlayerCharacterEditionComponent = new PlayerCharacterEditionComponent();
+
+            locPCEditionComponent._playerCharacter = (characterDataGrid.selectedItem as PlayerCharacter);
+            locPCEditionComponent._savedPlayerCharacter = new PlayerCharacter();
+            CastingAlgoTools.copyPlayerCharacter(locPCEditionComponent._playerCharacter, locPCEditionComponent._savedPlayerCharacter);
+            PopUpManager.addPopUp(locPCEditionComponent, this, true);
+            PopUpManager.centerPopUp(locPCEditionComponent);
+            locPCEditionComponent.addEventListener(CloseEvent.CLOSE, DataManager.getInstance().refreshPlayerCharacterArray);
+        }
+
+        protected function createPlayerCharacter(event:MouseEvent):void {
+            var locPCEditionComponent:PlayerCharacterEditionComponent = new PlayerCharacterEditionComponent();
+
+            // Creation d'un nouveau personnage
+            locPCEditionComponent._playerCharacter = new PlayerCharacter();
+            locPCEditionComponent._playerCharacter.onCreateEntity = true;
+
+            for each (var skill:Skill in DataManager.getInstance().skillsCastingArray) {
+                var newSkill:Skill = new Skill();
+                newSkill.name = skill.name;
+                newSkill.capacity = 0;
+                newSkill.ponderation = 1;
+
+                locPCEditionComponent._playerCharacter.skillArray.addItem(newSkill);
+            }
+
+            locPCEditionComponent._savedPlayerCharacter = new PlayerCharacter();
+            CastingAlgoTools.copyPlayerCharacter(locPCEditionComponent._playerCharacter, locPCEditionComponent._savedPlayerCharacter);
+            PopUpManager.addPopUp(locPCEditionComponent, this, true);
+            PopUpManager.centerPopUp(locPCEditionComponent);
+            locPCEditionComponent.addEventListener(CloseEvent.CLOSE, DataManager.getInstance().refreshPlayerCharacterArray);
+        }
+
+
+        protected function editHumanPlayer(event:MouseEvent):void {
+            var locHPEditionComponent:HumanPlayerEditionComponent = new HumanPlayerEditionComponent();
+
+            locHPEditionComponent._humanPlayer = (playerDataGrid.selectedItem as HumanPlayer);
+            locHPEditionComponent._savedHumanPlayer = new HumanPlayer();
+            CastingAlgoTools.copyHumanPlayer((playerDataGrid.selectedItem as HumanPlayer), locHPEditionComponent._savedHumanPlayer);
+            PopUpManager.addPopUp(locHPEditionComponent, this, true);
+            PopUpManager.centerPopUp(locHPEditionComponent);
+            locHPEditionComponent.addEventListener(CloseEvent.CLOSE, DataManager.getInstance().refreshHumanPlayerArray);
+        }
+
+
+        protected function createHumanPlayer(event:MouseEvent):void {
+            var locHPEditionComponent:HumanPlayerEditionComponent = new HumanPlayerEditionComponent();
+
+            // Creation d'un joueur
+            locHPEditionComponent._humanPlayer = new HumanPlayer();
+            locHPEditionComponent._humanPlayer.onCreateEntity = true;
+
+            for each (var skill:Skill in DataManager.getInstance().skillsCastingArray) {
+                var newSkill:Skill = new Skill();
+                newSkill.name = skill.name;
+                newSkill.capacity = 0;
+                newSkill.ponderation = 1;
+
+                locHPEditionComponent._humanPlayer.skillArray.addItem(newSkill);
+            }
+
+            locHPEditionComponent._savedHumanPlayer = new HumanPlayer();
+            CastingAlgoTools.copyHumanPlayer(locHPEditionComponent._humanPlayer, locHPEditionComponent._savedHumanPlayer);
+            PopUpManager.addPopUp(locHPEditionComponent, this, true);
+            PopUpManager.centerPopUp(locHPEditionComponent);
+            locHPEditionComponent.addEventListener(CloseEvent.CLOSE, DataManager.getInstance().refreshHumanPlayerArray);
+        }
+
+        protected function exportCharacterReferentiel(event:MouseEvent):void {
+            if (DataManager.getInstance().playerCharacterArray.length != 0) {
+                fileManager.exportCharacterReferentiel(DataManager.getInstance().playerCharacterArray);
+            }
+        }
+
+
+        protected function exportPlayerReferentiel(event:MouseEvent):void {
+            if (DataManager.getInstance().humanPlayerArray.length != 0) {
+                fileManager.exportPlayerReferentiel(DataManager.getInstance().humanPlayerArray);
+            }
+        }
+
+
+        protected function exportCastingResult(event:MouseEvent):void {
+            ExportGenotron.getInstance().Export();
+//				fileManager.exportCastingResult();
+        }
+
+
+        protected function changeChoosenAlgo(event:ListEvent):void {
+            AlgoParam.getInstance().choosenAlgo = (algoComboBox.selectedItem) as String;
+        }
+
+
+        protected function runCasting(event:MouseEvent):void {
+            if (sessionComboBox.selectedItem != null) {
+                CastingAlgoTools.buildPlayerCharacterArrayFromSessionNumber(_sessionNumber);
+
+                var locAlgoProgressBar:IFlexDisplayObject = PopUpManager.createPopUp(this, AlgoProgressBar);
+                (locAlgoProgressBar as AlgoProgressBar)._choosenAlgo = AlgoParam.getInstance().choosenAlgo;
+                PopUpManager.centerPopUp(locAlgoProgressBar);
+                locAlgoProgressBar.addEventListener(CloseEvent.CLOSE, buildAccordion);
+            }
+        }
+
+        protected function onChangeSexCriteria(event:Event):void {
+            AlgoParam.getInstance().sexCriteria = sexCriteriaBox.selected;
+        }
+
+        protected function onClickRemoveCastingAssociationButton(event:MouseEvent):void {
+            if (removeLockedCastingAssociation.selected)
+                CastingAssociationManager.removeCastingAssociation();
+            else
+                CastingAssociationManager.removeUnlockedCastingAssociation();
+        }
+
+        protected function ponderationCriteriaBox_changeHandler(event:Event):void {
+            AlgoParam.getInstance().ponderationCriteria = ponderationCriteriaBox.selected;
+        }
+
+        protected function equilibreCompetenceRelation_changeHandler(event:SliderEvent):void {
+            AlgoManager.getInstance()._eqBetweenCompetencyAndRelation = equilibreCompetenceRelation.value;
+        }
+
+        protected function searchPersonnageRefreshList(event:Event):void {
+            characterDataGrid.dataProvider = DataManager.getInstance().getPlayerCharacterArrayFromSearch(searchPersonnage.text);
+        }
+
+        protected function searchPersonnageFirstSearch(event:MouseEvent):void {
+            if (searchPersonnage.text == "Rechercher...") {
+                searchPersonnage.text = "";
+            }
+        }
+
+        protected function searchPlayerRefreshList(event:Event):void {
+            playerDataGrid.dataProvider = DataManager.getInstance().getHumanPlayerArrayFromSearch(searchPlayer.text);
+        }
+
+        protected function searchPlayerFirstSearch(event:MouseEvent):void {
+            if (searchPlayer.text == "Rechercher...") {
+                searchPlayer.text = "";
+            }
+        }
+
+        protected function sondageButton_clickHandler(event:MouseEvent):void {
+            navigateToURL(new URLRequest("https://docs.google.com/spreadsheet/viewform?formkey=dDRITUdBQUhOS25PWG0zSG1zWVZXUWc6MQ"));
+        }
+
+        protected function manuelButton_clickHandler(event:MouseEvent):void {
+            navigateToURL(new URLRequest("http://casting.larpomatic.net/casting/data/Manuel_utilisateur_Casting.pdf"));
+        }
+
+        private function buttonLoadCharacter(event:MouseEvent):void {
+            fileManager.importCharacter();
+
+            sessionRefreshComboBox();
+        }
+
+        private function buttonDownloadCharacterModel(event:MouseEvent):void {
+            fileManager.exportCharacterModelFile();
+        }
+
+        private function buttonLoadPlayer(event:MouseEvent):void {
+            fileManager.importPlayer();
+
+            sessionRefreshComboBox();
+        }
+
+        private function buttonDownloadPlayerModel(event:MouseEvent):void {
+            fileManager.exportPlayerModelFile();
+        }
+
+        protected function sessionComboBox_changeHandler(event:ListEvent):void {
+            _sessionNumber = sessionComboBox.selectedItem as int;
+        }
+
+        private function sessionRefreshComboBox():void {
+            var locSessionComboBoxDataProvider:ArrayCollection = CastingAlgoTools.buildIntArray(CastingAlgoTools.computeSessionNumberMaxWithFacultatif());
+
+            sessionComboBox.dataProvider = locSessionComboBoxDataProvider;
+            sessionComboBox.selectedItem = null;
+        }
+
+        protected function sessionComboBox_rollOverHandler(event:MouseEvent):void {
+            sessionRefreshComboBox();
+        }
+
+        protected function languageButtonFR(event:MouseEvent):void {
+            MultiLingualManager.getInstance().changeLanguage("fr_FR");
+        }
+
+        protected function languageButtonEN(event:MouseEvent):void {
+            MultiLingualManager.getInstance().changeLanguage("en_US");
+        }
+
+        protected function castingResult_clickHandler(event:MouseEvent):void {
+            // On update les résultats du casting
+            bestBoyList.dataProvider = CastingAssociationResult.getInstance().getBestBoyAssociation();
+            bestGirlList.dataProvider = CastingAssociationResult.getInstance().getBestGirlAssociation();
+            worstBoyList.dataProvider = CastingAssociationResult.getInstance().getWorstBoyAssociation();
+            worstGirlList.dataProvider = CastingAssociationResult.getInstance().getWorstGirlAssociation();
+            scoreMoyenCast.text = MultiLingualManager.getInstance().scoreMoyenCast + " : " + ((int)(CastingAssociationResult.getInstance().getMoyenneScoreAssociation())).toString();
+            scoreMoyenBoyCast.text = MultiLingualManager.getInstance().scoreMoyenBoyCast + " : " + ((int)(CastingAssociationResult.getInstance().getMoyenneScoreBoyAssociation())).toString();
+            scoreMoyenGirlCast.text = MultiLingualManager.getInstance().scoreMoyenGirlCast + " : " + ((int)(CastingAssociationResult.getInstance().getMoyenneScoreGirlAssociation())).toString();
+        }
+        ]]>
+	</mx:Script>
+
+    <mx:VBox width="100%" height="100%"
+             verticalGap="0">
+        <mx:HBox width="100%"
+                 horizontalAlign="left"
+                 horizontalGap="0">
+            <mx:VBox verticalAlign="middle" horizontalAlign="center"
+                     paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10">
+                <mx:ComboBox id="algoComboBox" width="100%"
+                             selectedItem="{null}"
+                             prompt="{MultiLingualManager.getInstance().chooseAlgoButton}"
+                             change="changeChoosenAlgo(event)">
+                    <mx:ArrayCollection id="AlgoList">
+                        <mx:String>Best Mean</mx:String>
+                        <mx:String>First Fit</mx:String>
+                        <mx:String>Maximum</mx:String>
+                    </mx:ArrayCollection>
+                </mx:ComboBox>
+                <mx:HBox width="100%">
+                    <mx:ComboBox id="sessionComboBox" width="100%"
+                                 rollOver="sessionComboBox_rollOverHandler(event)"
+                                 change="sessionComboBox_changeHandler(event)"
+                                 prompt="{MultiLingualManager.getInstance().chooseSessionNumberButton}"/>
+                </mx:HBox>
+                <mx:Button width="100%" height="100%" label="{MultiLingualManager.getInstance().runCastingButton}"
+                           click="runCasting(event)" fontSize="20" fontStyle="italic"
+                           fontWeight="bold" textDecoration="none"/>
+            </mx:VBox>
+            <mx:VBox width="100%" height="100%"
+                     horizontalAlign="center" verticalAlign="top"
+                     paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10">
+                <mx:Label fontSize="36" fontStyle="italic" fontWeight="bold"
+                          text="{MultiLingualManager.getInstance().applicationTitle}"/>
+            </mx:VBox>
+            <mx:VBox>
+                <mx:Button click="languageButtonFR(event)"
+                           icon="@Embed('../../asset/fr.png')"/>
+                <mx:Button click="languageButtonEN(event)"
+                           icon="@Embed('../../asset/uk.png')"/>
+            </mx:VBox>
+        </mx:HBox>
+
+        <mx:HBox width="100%" height="100%"
+                 horizontalGap="0">
+            <mx:VBox width="20%" height="100%">
+                <mx:TextInput id="searchPersonnage" width="100%"
+                              change="searchPersonnageRefreshList(event)"
+                              click="searchPersonnageFirstSearch(event)" fontStyle="italic"
+                              text="Rechercher..."/>
+                <mx:DataGrid id="characterDataGrid" width="100%" height="100%"
+                             itemRenderer="Views.Renderers.EntityItemRenderer"
+                             dataProvider="{DataManager.getInstance().playerCharacterArray}"
+                             click="editPlayerCharacter(event)">
+                    <mx:columns>
+                        <mx:DataGridColumn headerText="Personnages"/>
+                    </mx:columns>
+                </mx:DataGrid>
+                <mx:Button width="100%" label="{MultiLingualManager.getInstance().importPersoButton}"
+                           click="buttonLoadCharacter(event)"/>
+                <mx:Button label="{MultiLingualManager.getInstance().downloadModelButton}" width="100%"
+                           click="buttonDownloadCharacterModel(event)"/>
+                <mx:Button width="100%" label="{MultiLingualManager.getInstance().createPersoButton}"
+                           click="createPlayerCharacter(event)"/>
+                <mx:Button width="100%" label="{MultiLingualManager.getInstance().exportPersoButton}"
+                           click="exportCharacterReferentiel(event)"/>
+            </mx:VBox>
+            <mx:TabNavigator width="60%" height="100%">
+                <mx:Canvas width="100%" height="100%" label="{MultiLingualManager.getInstance().resultCastingOnglet}">
+                    <mx:VBox width="100%" height="100%">
+                        <mx:Accordion id="accordion" width="100%" height="100%"/>
+                    </mx:VBox>
+                </mx:Canvas>
+                <mx:Canvas width="100%" height="100%" label="{MultiLingualManager.getInstance().advenceInfosOnglet}"
+                           click="castingResult_clickHandler(event)">
+                    <mx:VBox width="100%" height="100%">
+                        <mx:FormItem label="{MultiLingualManager.getInstance().sevenBestBoyCast}" width="100%">
+                            <mx:List id="bestBoyList" width="100%" labelField="sevenBestBoyCast"
+                                     dataProvider="{CastingAssociationResult.getInstance().getBestBoyAssociation()}"
+                                     itemRenderer="Views.Renderers.AssociationItemRenderer"/>
+                        </mx:FormItem>
+                        <mx:FormItem label="{MultiLingualManager.getInstance().sevenBestGirlCast}" width="100%">
+                            <mx:List id="bestGirlList" width="100%" labelField="sevenBestGirlCast"
+                                     dataProvider="{CastingAssociationResult.getInstance().getBestGirlAssociation()}"
+                                     itemRenderer="Views.Renderers.AssociationItemRenderer"/>
+                        </mx:FormItem>
+                        <mx:FormItem label="{MultiLingualManager.getInstance().sevenWorstBoyCast}" width="100%">
+                            <mx:List id="worstBoyList" width="100%" labelField="sevenWorstBoyCast"
+                                     dataProvider="{CastingAssociationResult.getInstance().getWorstBoyAssociation()}"
+                                     itemRenderer="Views.Renderers.AssociationItemRenderer"/>
+                        </mx:FormItem>
+                        <mx:FormItem label="{MultiLingualManager.getInstance().sevenWorstGirlCast}" width="100%">
+                            <mx:List id="worstGirlList" width="100%" labelField="sevenWorstGirlCast"
+                                     dataProvider="{CastingAssociationResult.getInstance().getWorstGirlAssociation()}"
+                                     itemRenderer="Views.Renderers.AssociationItemRenderer"/>
+                        </mx:FormItem>
+                        <mx:Label id="scoreMoyenCast"
+                                  text="{MultiLingualManager.getInstance().scoreMoyenCast} : {int(CastingAssociationResult.getInstance().getMoyenneScoreAssociation() / 1).toString()}"
+                                  width="100%"/>
+                        <mx:Label id="scoreMoyenBoyCast"
+                                  text="{MultiLingualManager.getInstance().scoreMoyenBoyCast} : {int(CastingAssociationResult.getInstance().getMoyenneScoreBoyAssociation() / 1).toString()}"
+                                  width="100%"/>
+                        <mx:Label id="scoreMoyenGirlCast"
+                                  text="{MultiLingualManager.getInstance().scoreMoyenGirlCast} : {int(CastingAssociationResult.getInstance().getMoyenneScoreGirlAssociation() / 1).toString()}"
+                                  width="100%"/>
+                        <mx:Label id="listPlayWithUncoverCast" text="" visible="false" width="100%"/>
+                        <mx:Label id="listPlayWithoutUncoverCast" text="" visible="false" width="100%"/>
+                        <mx:Label id="listSessionWithUncoverCast" text="" visible="false" width="100%"/>
+                        <mx:Label id="listSessionWithoutUncoverCast" text="" visible="false" width="100%"/>
+                    </mx:VBox>
+                </mx:Canvas>
+                <mx:Canvas width="100%" height="100%" label="{MultiLingualManager.getInstance().advenceSettingsOnglet}">
+                    <mx:VBox width="100%" height="100%">
+                        <mx:Label width="100%" fontStyle="italic" fontWeight="bold"
+                                  text="{MultiLingualManager.getInstance().algoSettingLabel} :" textAlign="center"/>
+                        <mx:HBox width="90%">
+                            <mx:CheckBox label="Sexe Criteria"
+                                         id="sexCriteriaBox"
+                                         enabled="true"
+                                         selected="{AlgoParam.getInstance().sexCriteria}"
+                                         change="onChangeSexCriteria(event)"/>
+                            <mx:CheckBox id="ponderationCriteriaBox" label="Ponderation Criteria"
+                                         change="ponderationCriteriaBox_changeHandler(event)" enabled="true"
+                                         selected="{AlgoParam.getInstance().ponderationCriteria}"/>
+                            <mx:CheckBox id="removeLockedCastingAssociation" visible="false"
+                                         selected="false" label="Supprimer également les associations verrouillés"/>
+                        </mx:HBox>
+                        <mx:HSlider id="equilibreCompetenceRelation" width="100%" visible="false"
+                                    change="equilibreCompetenceRelation_changeHandler(event)"
+                                    labels="[Competence, Relation]" liveDragging="true" maximum="100"
+                                    minimum="0" snapInterval="10"
+                                    value="{AlgoManager.getInstance()._eqBetweenCompetencyAndRelation}"/>
+                        <mx:HRule width="100%"/>
+                        <mx:Label width="100%" fontStyle="italic" fontWeight="bold"
+                                  text="{MultiLingualManager.getInstance().relationshipPonderationLabel} :"
+                                  textAlign="center"/>
+                        <mx:HBox width="90%">
+                            <mx:VBox>
+                                <mx:Label text="{MultiLingualManager.getInstance().playWithLabel} : "/>
+                                <mx:Label text="{MultiLingualManager.getInstance().playWithoutLabel} : "/>
+                                <mx:Label text="{MultiLingualManager.getInstance().playInSameSessionLabel} : "/>
+                                <mx:Label text="{MultiLingualManager.getInstance().playInOtherSessionLabel} : "/>
+                            </mx:VBox>
+                            <mx:VBox width="100%">
+                                <mx:HSlider width="100%" maximum="10" minimum="1" snapInterval="1"
+                                            id="ponderationPlayWith"/>
+                                <mx:HSlider width="100%" maximum="10" minimum="1" snapInterval="1"
+                                            id="ponderationPlayWithout"/>
+                                <mx:HSlider width="100%" maximum="10" minimum="1" snapInterval="1"
+                                            id="ponderationSessionWith"/>
+                                <mx:HSlider width="100%" maximum="10" minimum="1" snapInterval="1"
+                                            id="ponderationSessionWithout"/>
+                            </mx:VBox>
+
+                        </mx:HBox>
+                        <mx:HRule width="100%"/>
+                        <mx:Label width="100%" fontStyle="italic" fontWeight="bold"
+                                  text="{MultiLingualManager.getInstance().competenciesPonderationLabel} :"
+                                  textAlign="center"/>
+                        <mx:HBox width="90%">
+                            <mx:List id="ponderationList" itemRenderer="Views.Renderers.PonderationPropertyRenderer"
+                                     dataProvider="{DataManager.getInstance().skillsCastingArray}"
+                                     width="100%" borderVisible="false"/>
+                        </mx:HBox>
+                        <mx:HRule width="100%"/>
+
+                    </mx:VBox>
+                </mx:Canvas>
+                <mx:Canvas width="100%" height="100%" label="{MultiLingualManager.getInstance().otherInfosOnglet}">
+                    <mx:TextArea width="100%" editable="false" paddingBottom="10" paddingLeft="10"
+                                 paddingRight="10" paddingTop="10" height="100%"
+                                 text="Le casting est actuellement en beta : v 0.3 &#xd;&#xd;Ordre historique des responsables :&#xd;- Riyad YAKINE (2011)&#xd;- Mickael LEBON (2012)&#xd;&#xd;Contact possible :&#xd;- Telephone : &#xd;- Mail : "/>
+                </mx:Canvas>
+            </mx:TabNavigator>
+            <mx:VBox width="20%" height="100%">
+                <mx:TextInput id="searchPlayer" width="100%" change="searchPlayerRefreshList(event)"
+                              click="searchPlayerFirstSearch(event)" fontStyle="italic"
+                              text="Rechercher..."/>
+                <mx:DataGrid id="playerDataGrid" width="100%" height="100%"
+                             itemRenderer="Views.Renderers.EntityItemRenderer"
+                             dataProvider="{DataManager.getInstance().humanPlayerArray}"
+                             click="editHumanPlayer(event)">
+                    <mx:columns>
+                        <mx:DataGridColumn headerText="Joueurs"/>
+                    </mx:columns>
+                </mx:DataGrid>
+                <mx:Button width="100%" label="{MultiLingualManager.getInstance().importPlayerButton}"
+                           click="buttonLoadPlayer(event)"/>
+                <mx:Button label="{MultiLingualManager.getInstance().downloadModelButton}" width="100%"
+                           click="buttonDownloadPlayerModel(event)"/>
+                <mx:Button width="100%" label="{MultiLingualManager.getInstance().createPlayerButton}"
+                           click="createHumanPlayer(event)"/>
+                <mx:Button width="100%" label="{MultiLingualManager.getInstance().exportPlayerButton}"
+                           click="exportPlayerReferentiel(event)"/>
+            </mx:VBox>
+        </mx:HBox>
+
+        <mx:HBox width="100%" height="30%"
+                 horizontalAlign="center" paddingBottom="10" paddingTop="10" paddingLeft="10" paddingRight="10">
+            <mx:Label text="{MultiLingualManager.getInstance().informationLabel} :"/>
+            <mx:TextArea id="infoUtilisateur" width="100%" height="100%" editable="false"
+                         text="{ErrorManager.getInstance().importErrorMessage}"/>
+        </mx:HBox>
+
+        <mx:HBox width="100%"
+                 horizontalAlign="center" paddingBottom="10" paddingTop="10">
+            <mx:Button label="{MultiLingualManager.getInstance().exportCastingResultButton}"
+                       click="exportCastingResult(event)"/>
+            <mx:Button id="sondageButton" label="{MultiLingualManager.getInstance().linkToSondageButton}"
+                       click="sondageButton_clickHandler(event)"/>
+            <mx:Button id="manuelButton" label="{MultiLingualManager.getInstance().linkToManualButton}"
+                       click="manuelButton_clickHandler(event)"/>
+        </mx:HBox>
+    </mx:VBox>
+</mx:Canvas>

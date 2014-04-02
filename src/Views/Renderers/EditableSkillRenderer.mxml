@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml" creationComplete="onCreation(event)">
+	<mx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.events.SliderEvent;
+			
+			[Bindable]
+			public var promptIndex:int;
+
+			protected function onCreation(event:FlexEvent):void
+			{
+//				if (data != null)
+//				{
+//					promptIndex = data.capacity - 1;
+//				}
+//				else
+//				{
+//					promptIndex = 0;
+//				}
+			}
+
+//			protected function onChange(event:ListEvent):void
+//			{
+//				data.capacity = comboBox.selectedItem;			
+//			}
+
+			protected function onChange(event:SliderEvent):void
+			{
+				data.capacity = sliderBar.value;
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<mx:Label text="{data.name}"/>
+	<mx:HSlider id="sliderBar" width="100%" change="onChange(event)" maximum="100"
+				minimum="1" snapInterval="1" value="{data.capacity}"/>
+<!--	<mx:ComboBox id="comboBox"
+				 selectedIndex="{promptIndex}"
+				 dataProvider="{valueArray}"
+				 change="onChange(event)"/> -->
+</mx:HBox>	 
+

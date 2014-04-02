@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Label xmlns:mx="http://www.adobe.com/2006/mxml"
+		  text="{data._humanPlayer.firstName + ' ' + data._humanPlayer.lastName + ' (' + data._humanPlayer.sex + ')' + ' : ' + int(data._performanceScore).toString()}"/>

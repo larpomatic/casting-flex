@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%">
+	
+	<mx:Script>
+		<![CDATA[
+			import DataObjects.HumanPlayer;
+			import DataObjects.PlayerCharacter;
+			import Model.DataManager.DataManager;
+			import Model.ErrorManager.ErrorManager;
+			import Model.FileManager.FileManager;
+			import Model.ToolBox.CastingAlgoTools;
+			import Model.ViewManager.ViewManager;
+			import Views.Components.HumanPlayerEditionComponent;
+			import Views.Components.PlayerCharacterEditionComponent;
+			import Views.Components.SessionOrganizerComponent;
+			
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			
+			// Notre gestionnaire de fichier avec lequel les différents boutons vont intéragir
+			private var fileManager:FileManager = new FileManager();
+			
+			/**
+			 * Fonction permettant l'appel au model lançant l'import de personnage
+			 */
+			private function buttonLoadCharacter(event:MouseEvent):void
+			{
+				fileManager.importCharacter();
+			}
+			
+			private function buttonDownloadCharacterModel(event:MouseEvent):void
+			{
+				fileManager.exportCharacterModelFile();
+			}
+			
+			protected function editPlayerCharacter(event:MouseEvent):void
+			{
+				var locPCEditionComponent:PlayerCharacterEditionComponent = new PlayerCharacterEditionComponent();
+				
+				locPCEditionComponent._playerCharacter = (characterDataGrid.selectedItem as PlayerCharacter);
+				locPCEditionComponent._savedPlayerCharacter = new PlayerCharacter();
+				CastingAlgoTools.copyPlayerCharacter(locPCEditionComponent._playerCharacter,
+					locPCEditionComponent._savedPlayerCharacter);
+				PopUpManager.addPopUp(locPCEditionComponent, this, true);
+				PopUpManager.centerPopUp(locPCEditionComponent);
+				locPCEditionComponent.addEventListener(CloseEvent.CLOSE, DataManager.getInstance().refreshPlayerCharacterArray);
+			}
+			
+			/**
+			 * Fonction permettant l'appel au model lançant l'import de joueur
+			 */
+			private function buttonLoadPlayer(event:MouseEvent):void
+			{	
+				fileManager.importPlayer();
+			}
+			
+			private function buttonDownloadPlayerModel(event:MouseEvent):void
+			{
+				fileManager.exportPlayerModelFile();
+			}
+			
+			protected function editHumanPlayer(event:MouseEvent):void
+			{
+				var locHPEditionComponent:HumanPlayerEditionComponent = new HumanPlayerEditionComponent();
+				
+				locHPEditionComponent._humanPlayer = (playerDataGrid.selectedItem as HumanPlayer);
+				locHPEditionComponent._savedHumanPlayer = new HumanPlayer();
+				CastingAlgoTools.copyHumanPlayer(locHPEditionComponent._humanPlayer,
+					locHPEditionComponent._savedHumanPlayer);
+				PopUpManager.addPopUp(locHPEditionComponent, this, true);
+				PopUpManager.centerPopUp(locHPEditionComponent);
+				locHPEditionComponent.addEventListener(CloseEvent.CLOSE, DataManager.getInstance().refreshHumanPlayerArray);
+			}
+			
+			protected function buttonShowComputeCastingView(event:MouseEvent):void
+			{
+				var locSessionOrganizerComponent:SessionOrganizerComponent = new SessionOrganizerComponent();
+				// Recuperation du nombre maximum de session
+				locSessionOrganizerComponent._sessionNumberMax = CastingAlgoTools.computeSessionNumberMax();
+				// Creation du composant qui recuperera le resultat des sessions
+				locSessionOrganizerComponent._sessionNumberArray = CastingAlgoTools.buildIntArray(locSessionOrganizerComponent._sessionNumberMax);
+				PopUpManager.addPopUp(locSessionOrganizerComponent, this, true);
+				PopUpManager.centerPopUp(locSessionOrganizerComponent);
+			}
+			
+			protected function sondageButton_clickHandler(event:MouseEvent):void
+			{
+				navigateToURL ( new URLRequest( "http://www.google.com" ) );
+			}
+			
+			protected function manuelButton_clickHandler(event:MouseEvent):void
+			{
+				navigateToURL ( new URLRequest( "http://casting.larpomatic.net/casting/data/Manuel_utilisateur_Casting.pdf" ) );
+			}
+			
+		]]>
+	</mx:Script>
+	
+	
+	<mx:VBox height="100%" width="100%">		
+		<mx:HBox height="35%" width="100%">
+			<mx:DataGrid id="characterDataGrid" width="50%" height="100%"
+						 itemRenderer="Views.Renderers.EntityItemRenderer"
+						 dataProvider="{DataManager.getInstance().playerCharacterArray}"
+						 click="editPlayerCharacter(event)">
+				<mx:columns>
+					<mx:DataGridColumn headerText="Personnages"/>
+				</mx:columns>
+			</mx:DataGrid>
+			<mx:VBox>
+				<mx:Button label="Importer des personnages"
+						   click="buttonLoadCharacter(event)"/>
+				<mx:Button label="Télécharger le modèle de fichier d'import de personnages"
+						   click="buttonDownloadCharacterModel(event)"/>
+			</mx:VBox>	
+		</mx:HBox>
+		
+		<mx:HBox height="35%" width="100%">
+			<mx:DataGrid id="playerDataGrid" width="50%" height="100%"
+						 itemRenderer="Views.Renderers.EntityItemRenderer"
+						 dataProvider="{DataManager.getInstance().humanPlayerArray}"
+						 click="editHumanPlayer(event)">
+				<mx:columns>
+					<mx:DataGridColumn headerText="Joueurs"/>
+				</mx:columns>
+			</mx:DataGrid>
+			<mx:VBox>
+				<mx:Button label="Importer des joueurs"
+						   click="buttonLoadPlayer(event)"/>
+				<mx:Button label="Télécharger le modèle de fichier d'import de joueurs"
+						   click="buttonDownloadPlayerModel(event)"/>
+			</mx:VBox>
+		</mx:HBox>
+		
+		<mx:HBox height="20%" width="100%">
+			<mx:Label text="Messages utilisateur"/>
+			<mx:TextArea editable="false" height="100%" width="100%"
+						 text="{ErrorManager.getInstance().importErrorMessage}"/>
+		</mx:HBox>	
+		
+		<mx:HBox height="10%" width="100%" horizontalAlign="center">
+			<mx:Button label="Suivant"
+					   click="buttonShowComputeCastingView(event)"/>				
+			<mx:Button id="sondageButton" label="Lien vers Google"
+					   click="sondageButton_clickHandler(event)"/>
+			<mx:Button id="manuelButton" label="Manuel Utilisateur"
+					   click="manuelButton_clickHandler(event)"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</mx:Canvas>
